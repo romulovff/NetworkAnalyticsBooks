@@ -1,0 +1,75 @@
+---
+title: "Group Project Notebook"
+output: html_notebook
+---
+
+```{r}
+library(data.table)
+library(ggplot2)
+library(igraph)
+library(stringr)
+
+
+dt.books <- read.csv(file = "books.csv")
+``   `
+
+```{r}
+dt.books <- data.table(dt.books[,c("title","authors","categories","published_year","average_rating")])
+
+dt.books[,"title"] = str_to_lower(dt.books[,"title"])
+dt.books[,"authors"] = str_to_title(dt.books[,"authors"])
+
+View(dt.books)
+#Normalize title and authors names
+dt.books.categories <- data.table[dt.books[,list(n_cat = .N), by=categories]]
+         
+
+```{r}
+
+```
+
+```{r}
+
+
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+
+```
+
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
