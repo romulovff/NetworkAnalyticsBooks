@@ -11,8 +11,7 @@ library(data.table)
 library(ggplot2)
 library(igraph)
 
-dt.books <- fread("books.csv") 
-dt.books <- dt.books[,c("title", "authors", "categories", "published_year", "average_rating")]
+dt.books <- fread("dt.books.clean.csv") 
 save(dt.books, file="books.RData") 
 ```
 
@@ -21,7 +20,22 @@ save(dt.books, file="books.RData")
 ```{r   }
 load("books.RData") 
 
+# Creating the column avg_rating_class that tells for each BOOK the rating that they are in
 dt.books$avg_rating_class <- with(dt.books, ifelse(average_rating >= 0 & average_rating < 0.5, "[0-0.5[", ifelse(average_rating >= 0.5 & average_rating < 1, "[0.5 -1[", ifelse(average_rating >= 1 & average_rating < 1.5, "[1-1.5[", ifelse(average_rating >= 1.5 & average_rating < 2, "[1.5-2[", ifelse(average_rating >= 2 & average_rating <= 2.5, "[2-2.5]", ifelse(average_rating >= 2.5 & average_rating <= 3, "[2.5-3[", ifelse(average_rating >= 3 & average_rating <= 3.5, "[3-3.5[", ifelse(average_rating >= 3.5 & average_rating <= 4,  "[3.5-4[", ifelse(average_rating >= 4 & average_rating <= 4.5,  "[4-4.5[", ifelse(average_rating >= 4.5 & average_rating <= 5,  "[4.5-5]", "NA")))))))))))
+
+# Creating the column avg_rating_individual that tells for each AUTHOR the rating that they are in (by doing the average of all their books)
+average.ratings <- vector()
+
+for (author in dt.books$authors) {
+  the_author <- dt.books[authors %in% author]
+  average_rating_author <- mean(the_author$average_rating)
+  average.ratings <- c(average.ratings, average_rating_author)
+}
+
+dt.books$avg_rating_individual <- average.ratings
+
+# Creating the column avg_rating_individual_class that tells for each AUTHOR the rating that they are in (same as above but with new column)
+dt.books$avg_rating_individual_class <- with(dt.books, ifelse(avg_rating_individual >= 0 & avg_rating_individual < 0.5, "[0-0.5[", ifelse(avg_rating_individual >= 0.5 & avg_rating_individual < 1, "[0.5 -1[", ifelse(avg_rating_individual >= 1 & avg_rating_individual < 1.5, "[1-1.5[", ifelse(avg_rating_individual >= 1.5 & avg_rating_individual < 2, "[1.5-2[", ifelse(avg_rating_individual >= 2 & avg_rating_individual <= 2.5, "[2-2.5]", ifelse(avg_rating_individual >= 2.5 & avg_rating_individual <= 3, "[2.5-3[", ifelse(avg_rating_individual >= 3 & avg_rating_individual <= 3.5, "[3-3.5[", ifelse(avg_rating_individual >= 3.5 & avg_rating_individual <= 4,  "[3.5-4[", ifelse(avg_rating_individual >= 4 & avg_rating_individual <= 4.5,  "[4-4.5[", ifelse(avg_rating_individual >= 4.5 & avg_rating_individual <= 5,  "[4.5-5]", "NA")))))))))))
 ```
 
 3. Choosing the author
@@ -34,10 +48,9 @@ author = "Alan Dean Foster"
 
 ```{r   }
 dt.author <- dt.books[authors == author]
-
-average_rating_author <- mean(dt.author$average_rating)
-average_rating_author
+dt.author$avg_rating_individual[1]
 ```
+
 
 5. Number of books published
 
@@ -63,6 +76,7 @@ categories.count$Var1[[1]]
 
 ```{r   }
 dt.author.unique <- dt.author[!duplicated(dt.author[,title])]
+dt.author.unique <- dt.author.unique[,c("title", "authors")]
 g.author.books <- graph.data.frame(dt.author.unique, directed=TRUE)
 plot(g.author.books)
 ```
@@ -78,33 +92,17 @@ plot(g.books.category)
 10. Graph that links to other authors that have a similar ranking
 
 ```{r   }
-if (average_rating_author >= 0 & average_rating_author <= 0.5) {
-  avg_rating_class_author = "[0-0.5["
-} else if (average_rating_author >= 0.5 & average_rating_author <= 1) {
-  avg_rating_class_author = "[0.5-1["
-} else if (average_rating_author >= 1 & average_rating_author <= 1.5) {
-  avg_rating_class_author = "[1-1.5["
-} else if (average_rating_author >= 1.5 & average_rating_author <= 2) {
-  avg_rating_class_author = "[1.5-2["
-} else if (average_rating_author >= 2 & average_rating_author <= 2.5) {
-  avg_rating_class_author = "[2-2.5["
-} else if (average_rating_author >= 2.5 & average_rating_author <= 3) {
-  avg_rating_class_author = "[2.5-3["
-} else if (average_rating_author >= 3 & average_rating_author <= 3.5) {
-  avg_rating_class_author = "[3-3.5["
-} else if (average_rating_author >= 3.5 & average_rating_author <= 4) {
-  avg_rating_class_author = "[3.5-4["
-} else if (average_rating_author >= 4 & average_rating_author <= 4.5) {
-  avg_rating_class_author = "[4-4.5["
-} else if (average_rating_author >= 4.5 & average_rating_author <= 5) {
-  avg_rating_class_author = "[4.5-5["
-}
 
-dt.similar.ranking <- dt.books[avg_rating_class == avg_rating_class_author]
-dt.similar.ranking <- dt.similar.ranking[,c("authors", "avg_rating_class")]
-g.similar.ranking <- graph.data.frame(dt.similar.ranking[1:30], directed=FALSE, vertices = NULL)
-plot(g.similar.ranking)
+#Defined by user
+N = 30
 
+author_class <- dt.author$avg_rating_individual_class[1]
+
+dt.books.unique <- dt.books[!duplicated(dt.books[,authors])]
+dt.books.unique.similar <- dt.books.unique[avg_rating_individual_class == author_class]
+dt.books.unique.similar <- dt.books.unique.similar[,c("authors", "avg_rating_individual_class")]
+g.books.ranking <- graph.data.frame(dt.books.unique.similar[1:N], directed=TRUE, vertices = NULL)
+plot(g.books.ranking)
 ```
 
 11. Graph that links authors with the same category
