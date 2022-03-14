@@ -10,8 +10,9 @@ output: html_notebook
 library(data.table)   
 library(ggplot2)
 library(igraph)
+library(openxlsx)
 
-dt.books <- fread("dt.books.clean.csv") 
+dt.books <- read.xlsx("dt.books.clean.xlsx")
 save(dt.books, file="books.RData") 
 ```
 
@@ -31,7 +32,7 @@ dt.books$avg_rating_class <- with(dt.books, ifelse(average_rating >= 0 & average
 average.ratings <- vector()
 
 for (author in dt.books$authors) {
-  the_author <- dt.books[authors %in% author]
+  the_author <- dt.books[dt.books$authors %in% author, ]
   average_rating_author <- mean(the_author$average_rating)
   average.ratings <- c(average.ratings, average_rating_author)
 }
@@ -39,33 +40,51 @@ for (author in dt.books$authors) {
 dt.books$avg_rating_individual <- average.ratings
 
 # Creating the column avg_rating_individual_class that tells for each AUTHOR the rating that they are in (same as above but with new column)
-dt.books$avg_rating_individual_class <- with(dt.books, ifelse(avg_rating_individual >= 0 & avg_rating_individual < 0.5, "[0-0.5[", ifelse(avg_rating_individual >= 0.5 & avg_rating_individual < 1, "[0.5 -1[", ifelse(avg_rating_individual >= 1 & avg_rating_individual < 1.5, "[1-1.5[", ifelse(avg_rating_individual >= 1.5 & avg_rating_individual < 2, "[1.5-2[", ifelse(avg_rating_individual >= 2 & avg_rating_individual <= 2.5, "[2-2.5]", ifelse(avg_rating_individual >= 2.5 & avg_rating_individual <= 3, "[2.5-3[", ifelse(avg_rating_individual >= 3 & avg_rating_individual <= 3.5, "[3-3.5[", ifelse(avg_rating_individual >= 3.5 & avg_rating_individual <= 4,  "[3.5-4[", ifelse(avg_rating_individual >= 4 & avg_rating_individual <= 4.5,  "[4-4.5[", ifelse(avg_rating_individual >= 4.5 & avg_rating_individual <= 5,  "[4.5-5]", "NA")))))))))))
+dt.books$avg_rating_individual_class <- with(dt.books, ifelse(avg_rating_individual >= 0 & avg_rating_individual < 0.5, "[0-0.5[", ifelse(avg_rating_individual >= 0.5 & avg_rating_individual < 1, "[0.5 -1[", ifelse(avg_rating_individual >= 1 & avg_rating_individual < 1.5, "[1-1.5[", ifelse(avg_rating_individual >= 1.5 & avg_rating_individual < 2, "[1.5-2[", ifelse(avg_rating_individual >= 2 & avg_rating_individual <= 2.5, "[2-2.5[", ifelse(avg_rating_individual >= 2.5 & avg_rating_individual <= 3, "[2.5-3[", ifelse(avg_rating_individual >= 3 & avg_rating_individual <= 3.5, "[3-3.5[", ifelse(avg_rating_individual >= 3.5 & avg_rating_individual <= 4,  "[3.5-4[", ifelse(avg_rating_individual >= 4 & avg_rating_individual <= 4.5,  "[4-4.5[", ifelse(avg_rating_individual >= 4.5 & avg_rating_individual <= 5,  "[4.5-5]", "NA")))))))))))
 ```
 
-2.2 Creating columns: 
+2.2 Creating column main_category: 
 ```{r   }
 main.categories <- vector()
 
-for (author in dt.books$author) {
-  the_author <- dt.books[authors %in% author]
+for (author in dt.books$authors) {
+  the_author <- dt.books[dt.books$authors %in% author, ]
   main.category <- names(sort(table(the_author$categories), decreasing=TRUE)[1])
   main.categories <- c(main.categories, main.category)
 }
 dt.books$main_category <- main.categories
 ```
 
+2.3 Creating columns n_books, n_books_class
+```{r   }
+n.books <- vector()
+
+for (author in dt.books$authors) {
+  the_author <- dt.books[dt.books$authors %in% author, ]
+  #the.author.unique <- the_author[!duplicated(the_author$title), ]
+  n.books.author <- nrow(the_author)
+  n.books <- c(n.books, n.books.author)
+}
+dt.books$n_books <- n.books
+
+# Creating the column n_books_class that tells for each AUTHOR the class of number of books they are in
+dt.books$n_books_class <- with(dt.books, ifelse(n.books >= 0 & n.books < 10, "[0-10[", ifelse(n.books >= 10 & n.books < 20, "[10 -20[", ifelse(n.books >= 20 & n.books < 30, "[20-30[", ifelse(n.books >= 30 & n.books < 40, "[30-40[", ifelse(n.books >= 40 & n.books <= 50, "[40-50]", "NA"))))))
+```
+
+
 3. Choosing the author
 
 ```{r   }
-author = "Alan Dean Foster"
+author = "Agatha Christie"
 ```
 
 4. Average ranking of the author
 
 ```{r   }
-dt.author <- dt.books[authors == author]
+dt.author <- dt.books[dt.books$authors %in% author, ]
 dt.author$avg_rating_individual[1]
 ```
+
 
 
 5. Number of books published
@@ -74,11 +93,14 @@ dt.author$avg_rating_individual[1]
 nrow(dt.author)
 ```
 
+
 6. Years where the actor published books
 ```{r   }
-dt.unique.years <- dt.author[!duplicated(dt.author[,published_year])]
-names(sort(table(dt.unique.years$published_year), decreasing=TRUE))
+
+dt.unique.years <- unique(dt.author$published_year)
+sort(dt.unique.years, decreasing = FALSE)
 ```
+
 
 
 7. Most common category of the author
@@ -86,6 +108,7 @@ names(sort(table(dt.unique.years$published_year), decreasing=TRUE))
 ```{r   }
 dt.author$main_category[1]
 ```
+
 
 8. With how many co-authors has the author colaborated with?
 
@@ -96,7 +119,7 @@ dt.author$main_category[1]
 9. Graph that connects author with the book
 
 ```{r   }
-dt.author.unique <- dt.author[!duplicated(dt.author[,title])]
+dt.author.unique <- dt.author[!duplicated(dt.author$title), ]
 dt.author.books <- dt.author.unique[,c("title", "authors")]
 g.author.books <- graph.data.frame(dt.author.books, directed=TRUE)
 plot(g.author.books)
@@ -110,52 +133,45 @@ g.books.category <- graph.data.frame(dt.author.category, directed=TRUE, vertices
 plot(g.books.category)
 ```
 
-11. Graph that links to other authors that have a similar ranking
+11. Graph that links to other authors that have a similar ranking and a similar nº of books published
 
 ```{r   }
-
-#Defined by user
-N = 30
-
 author_class <- dt.author$avg_rating_individual_class[1]
+author_n_books_class <- dt.author$n_books_class[1]
 
-dt.books.unique <- dt.books[!duplicated(dt.books[,authors])]
-dt.books.unique.similar.rank <- dt.books.unique[avg_rating_individual_class == author_class]
+dt.books.unique <- dt.books[!duplicated(dt.author$authors), ]
+dt.books.unique.similar.rank <- dt.books.unique[dt.books.unique$avg_rating_individual_class == author_class & dt.books.unique$n_books_class == author_n_books_class, ]
 
 dt.books.unique.similar.rank$main.author <- author
 dt.books.unique.similar.rank <- dt.books.unique.similar.rank[,c("main.author", "authors")]
+dt.books.unique.similar.rank <- dt.books.unique.similar.rank <- dt.books.unique.similar.rank[!duplicated(dt.books.unique.similar.rank$authors), ]
 
-g.books.ranking <- graph.data.frame(dt.books.unique.similar.rank[1:N], directed=FALSE, vertices = NULL)
+g.books.ranking <- graph.data.frame(dt.books.unique.similar.rank, directed=FALSE, vertices = NULL)
 plot(g.books.ranking)
 ```
 
 12. Graph that links authors with the same main category
 
 ```{r   }
-#Defined by user
-N = 30
-
 author_main_category <- dt.author$main_category[1]
 
-dt.books.unique.category <- dt.books.unique[main_category == author_main_category]
+dt.books.unique.category <- dt.books.unique[dt.books.unique$main_category == author_main_category & dt.books.unique$n_books_class == author_n_books_class,  ]
 
 dt.books.unique.category$main.author <- author
 dt.books.unique.category <- dt.books.unique.category[,c("main.author", "authors")]
-g.books.same.category <- graph.data.frame(dt.books.unique.category[1:N], directed=FALSE, vertices = NULL)
+g.books.same.category <- graph.data.frame(dt.books.unique.category, directed=FALSE, vertices = NULL)
 plot(g.books.same.category)
 ```
+
 
 13. Graph that links with similar ranking AND category (10 and 11 combined)
 
 ```{r   }
-#Defined by user
-N = 30
-
 dt.merged <- merge(dt.books.unique.similar.rank, dt.books.unique.category ,by="authors", all = FALSE)
 
 dt.merged$main.author <- author
 dt.merged <- dt.merged[,c("main.author", "authors")]
   
-g.merged <- graph.data.frame(dt.merged[1:N], directed=FALSE, vertices = NULL)
+g.merged <- graph.data.frame(dt.merged, directed=FALSE, vertices = NULL)
 plot(g.merged)
 ```
