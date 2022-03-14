@@ -102,6 +102,7 @@ authors <- authors[1:(n-1),] #remove the fill row
 
 #Omit NA values
 dt.books.clean <- na.omit(authors)
+dt.books.clean$title <- str_to_title(dt.books.clean$title, locale="en")
 #FINAL CLEANED - USE THIS DATA SET
 View(dt.books.clean)
 
