@@ -1,15 +1,15 @@
 ---
 title: "Group Project Notebook"
 output: html_notebook
+
 ---
 
 ```{r}
+install.packages('bit64')
 library(data.table)
 library(ggplot2)
 library(igraph)
 library(stringr)
-
-
 dt.books <- fread("books.csv")
 dt.books <- data.frame(dt.books[,c("title","authors","categories","published_year","average_rating")])
 save(dt.books,file = "books.RData")
@@ -17,16 +17,13 @@ save(dt.books,file = "books.RData")
 
 ```{r}
 #DATA CLEANING
-
 #Reduce number of categories -> assume top10 categories in terms of amount of books published
 dt.books2 <- data.table(dt.books)
 dt.books.categories <- dt.books2[,list(n_cat = .N), by=categories][order(-n_cat)][1:10]
 dt.books.clean <- dt.books[dt.books$categories %in% dt.books.categories[,categories],]
-
 #Normalize title and authors names
 dt.books.clean[,"title"] = str_to_lower(dt.books.clean[,"title"])
 dt.books.clean[,"authors"] = str_to_title(dt.books.clean[,"authors"])
-
 #Separate authors 1 by 1 -> at maximum there is a book with 13 authors
 dt.books.clean['authors1'] = as.character(lapply(strsplit(as.character(dt.books.clean[,"authors"]), 
                              split=";"), "[", 1))
@@ -54,71 +51,64 @@ dt.books.clean['authors12'] = as.character(lapply(strsplit(as.character(dt.books
                              split=";"), "[", 12))
 dt.books.clean['authors13'] = as.character(lapply(strsplit(as.character(dt.books.clean[,"authors"]), 
                              split=";"), "[", 13))
-
 #Remove original authors column
 dt.books.clean <- subset( dt.books.clean, select = -authors )
-
 #Create data sets with different authors to joined them in only one column
 authors1 <- data.frame(dt.books.clean
                        [,c("title","categories","published_year","average_rating","authors1")])
 colnames(authors1) <- c('title','categories','published_year','average_rating','authors')
-
 authors2 <- data.frame(dt.books.clean
                        [,c("title","categories","published_year","average_rating","authors2")])
 colnames(authors2) <- c('title','categories','published_year','average_rating','authors')
-
 authors3 <- data.frame(dt.books.clean
                        [,c("title","categories","published_year","average_rating","authors3")])
 colnames(authors3) <- c('title','categories','published_year','average_rating','authors')
-
 authors4 <- data.frame(dt.books.clean
                        [,c("title","categories","published_year","average_rating","authors4")])
 colnames(authors4) <- c('title','categories','published_year','average_rating','authors')
-
 authors5 <- data.frame(dt.books.clean
                        [,c("title","categories","published_year","average_rating","authors5")])
 colnames(authors5) <- c('title','categories','published_year','average_rating','authors')
-
 authors6 <- data.frame(dt.books.clean
                        [,c("title","categories","published_year","average_rating","authors6")])
 colnames(authors6) <- c('title','categories','published_year','average_rating','authors')
-
 authors7 <- data.frame(dt.books.clean
                        [,c("title","categories","published_year","average_rating","authors7")])
 colnames(authors7) <- c('title','categories','published_year','average_rating','authors')
-
 authors8 <- data.frame(dt.books.clean
                        [,c("title","categories","published_year","average_rating","authors8")])
 colnames(authors8) <- c('title','categories','published_year','average_rating','authors')
-
 authors9 <- data.frame(dt.books.clean
                        [,c("title","categories","published_year","average_rating","authors9")])
 colnames(authors9) <- c('title','categories','published_year','average_rating','authors')
-
 authors10 <- data.frame(dt.books.clean
                        [,c("title","categories","published_year","average_rating","authors10")])
 colnames(authors10) <- c('title','categories','published_year','average_rating','authors')
-
 authors11 <- data.frame(dt.books.clean
                        [,c("title","categories","published_year","average_rating","authors11")])
 colnames(authors11) <- c('title','categories','published_year','average_rating','authors')
-
 authors12 <- data.frame(dt.books.clean
                        [,c("title","categories","published_year","average_rating","authors12")])
 colnames(authors12) <- c('title','categories','published_year','average_rating','authors')
-
 authors13 <- data.frame(dt.books.clean
                        [,c("title","categories","published_year","average_rating","authors13")])
 colnames(authors13) <- c('title','categories','published_year','average_rating','authors')
-
 authors <- rbind(authors1, authors2, authors3, authors4,authors5,
                      authors6, authors7, authors8, authors9, authors10,
                      authors11, authors12, authors13,fill = TRUE)
+
+n <- nrow(authors)
+authors <- authors[1:(n-1),] #remove the fill row
+
 #Omit NA values
 dt.books.clean <- na.omit(authors)
-
 #FINAL CLEANED - USE THIS DATA SET
 View(dt.books.clean)
+
+#Exporting to xlsx
+install.packages("writexl")
+writexl::write_xlsx(dt.books.clean,"D:/S2/Work Project/dt.books.clean.xlsx")
+
 ```
 
 ```{r}
@@ -131,7 +121,6 @@ ggplot(dt.books.clean,aes(x=authors1)) + geom_bar() +  ggtitle('Books per First 
 ggplot(dt.books.clean,aes(x=average_rating)) + geom_histogram() +  ggtitle('Books per Ranking')
 
 #Number of books with x authors
-
 #MISSING
 
 #First Authors with more published books
@@ -141,22 +130,30 @@ dt.books.clean[,list(n_books = .N), by=authors1][order(-n_books)][1:10]
 #First Authors with more ranking
 dt.books.clean[,list(authors_ranking = mean(average_rating)), by=authors1][order(-authors_ranking)][1:10]
 
+#Histogram with number of books per number of authors
+books.per.author <- table(unlist(table(dt.books.clean$title)))
+df.books.per.author <- data.frame(books.per.author)
+ggplot(df.books.per.author, aes(x=Var1, y=Freq)) + geom_bar(stat='identity') + ggtitle('Number of books per number of authors') + xlab('Number of Authors') + ylab('Number of Books')
 
-```
+#Homophily
+#MISSING
+
+#Bar Chart with % of books published per category
+ggplot(dt.books.categories, aes(x=categories, y=100*n_cat/sum(n_cat))) + geom_bar(stat='identity') + ggtitle('% of Books per Category') + xlab('Categories') + ylab('% of Total Books')
+
+#Graph that links the authors that have a similar % of books per category published with them
+#MISSING
+
+#Bar chart with % of books published per year
+books.per.year <- unlist(table(dt.books2$published_year))
+df.books.per.year <- data.frame(books.per.year)
+ggplot(df.books.per.year, aes(x=Var1, y=100*Freq/sum(Freq))) + geom_bar(stat='identity') + ggtitle('% of Books per Year') + xlab('Year') + ylab('% of Total Books')
+
+#or (depends on o que o vasco me responder)
+
+ggplot(dt.books.clean,aes(x=published_year, y=100*published_year/sum(published_year))) + geom_bar(stat='identity') + ggtitle('% of Books per Year')
 
 ```{r}
-#GRAPHS
-
-
-```
-
-```{r}
-
-```
-
-```{r}
-
-
 ```
 
 ```{r}
