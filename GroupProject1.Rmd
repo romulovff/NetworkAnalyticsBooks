@@ -116,7 +116,7 @@ writexl::write_xlsx(dt.books.clean,"D:/S2/Work Project/dt.books.clean.xlsx")
 
 #Number of books per $column
 ggplot(dt.books.clean,aes(x=categories)) + geom_bar() + ggtitle('Books per Category')
-ggplot(dt.books.clean,aes(x=published_year)) + geom_bar() + ggtitle('Books per Year published')
+ggplot(dt.books.clean,aes(x=published_year)) + geom_bar() + ggtitle('Books Published per Year')
 ggplot(dt.books.clean,aes(x=authors1)) + geom_bar() +  ggtitle('Books per First Author')
 ggplot(dt.books.clean,aes(x=average_rating)) + geom_histogram() +  ggtitle('Books per Ranking')
 
@@ -133,7 +133,7 @@ dt.books.clean[,list(authors_ranking = mean(average_rating)), by=authors1][order
 #Histogram with number of books per number of authors
 books.per.author <- table(unlist(table(dt.books.clean$title)))
 df.books.per.author <- data.frame(books.per.author)
-ggplot(df.books.per.author, aes(x=Var1, y=Freq)) + geom_bar(stat='identity') + ggtitle('Number of books per number of authors') + xlab('Number of Authors') + ylab('Number of Books')
+ggplot(df.books.per.author, aes(x=Var1, y=Freq)) + geom_bar(stat='identity') + ggtitle('Number of Books per Number of Authors') + xlab('Number of Authors') + ylab('Number of Books')
 
 #Homophily
 #MISSING
