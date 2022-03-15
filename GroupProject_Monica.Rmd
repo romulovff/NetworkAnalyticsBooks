@@ -117,7 +117,11 @@ dt.author$main_category[1]
 author.books <- unique(dt.author$title)
 books.in.dt <- dt.books[dt.books$title %in% author.books, ]
 books.in.dt.other <- books.in.dt[!books.in.dt$authors %in% author, ]
-books.in.dt.other[,c("title", "authors")]
+books.in.dt.other$main.author <- author
+books.in.dt.unique <- books.in.dt.other[,c("main.author", "authors")]
+g.co.authors <- graph.data.frame(books.in.dt.unique, directed=FALSE)
+plot(g.co.authors)
+
 ```
 
 9. Graph that connects author with the book
